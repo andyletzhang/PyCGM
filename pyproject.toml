@@ -1,0 +1,39 @@
+[project]
+name = "pycgm"
+
+version = "0.1.0"
+
+authors = [
+  { name="Andy Zhang", email="andyletzhang@uchicago.edu" },
+]
+
+description = "Interferogram processor for quantitative phase microscopy. Description last edited 20250315"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "numpy",
+    "pyfftw",
+    "scikit-image"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"pycgm" = ["phase1024.txt"]
+
+[tool.ruff]
+line-length = 130
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = true
