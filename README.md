@@ -1,7 +1,7 @@
-# pyCGM
+# PyCGM
 _Created by Andy Zhang for use in the [Gardel Lab at the University of Chicago](https://squishycell.uchicago.edu/)._
 
-A Python package for optical path difference (OPD) processing using Fourier analysis, based on the [CGMProcess](https://github.com/baffou/CGMprocess) MatLab scripts written by Guillaume Baffou.
+A Python package for optical path difference (OPD) processing using Fourier analysis, based on the MatLab [CGMProcess](https://github.com/baffou/CGMprocess) repository written by Guillaume Baffou, modified to automatically identify first-order points and optimized for repeat processing on the same reference image.
 ![Example phase interferogram and its corresponding phase map](src/pycgm/assets/phase_map_demo.png)
 ## Installation
 
@@ -10,8 +10,7 @@ pip install git+https://github.com/andyletzhang/pyCGM
 ```
 
 ## Requirements
-
-- Python 3.6+
+- Python >3.6
 - NumPy
 - pyFFTW
 - scikit-image
