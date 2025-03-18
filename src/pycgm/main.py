@@ -21,13 +21,13 @@ class CGM_Processor:
         shape : tuple of int, optional
             Shape of the images (if ref is not provided). Defaults to (2160, 2560) (the size of the Phasics SID4 camera chip).
         gamma : float, optional
-            The gamma parameter for processing, by default 39e-6
+            Period of the cross grating in meters, by default 39e-6
         d : float, optional
-            The distance 'd' parameter, by default 5e-4
+            Grating-camera distance in meters, by default 5e-4
         p : float, optional
-            The pixel size 'p' parameter, by default 6.5e-6
+            Camera pixel size in meters, by default 6.5e-6
         Z : int, optional
-            The Z factor for processing, by default 1
+            Zoom of the relay lens, by default 1
             
         gpu : bool, optional
             Whether to use GPU acceleration if available, by default True
@@ -58,46 +58,15 @@ class CGM_Processor:
             self.set_reference(ref)
 
     def fft(self, image):
-        """
-        Compute the FFT of an image.
-
-        Parameters:
-        -----------
-        image : numpy.ndarray or cupy.ndarray
-            Image to compute the FFT of
-
-        Returns:
-        --------
-        numpy.ndarray or cupy.ndarray
-            The FFT of the input image
-        """
+        """ Compute shifted FFT of an image. """
         return self.xp.fft.fftshift(self.xp.fft.fft2(image))
 
     def ifft(self, image):
-        """
-        Compute the inverse FFT of an image.
-
-        Parameters:
-        -----------
-        image : numpy.ndarray or cupy.ndarray
-            Image to compute the inverse FFT of
-
-        Returns:
-        --------
-        numpy.ndarray or cupy.ndarray
-            The inverse FFT of the input image
-        """
+        """ Compute inverse FFT of an image. """
         return self.xp.fft.ifft2(self.xp.fft.ifftshift(image))
 
     def set_reference(self, ref):
-        """
-        Set the reference image for the OPD processor.
-
-        Parameters:
-        -----------
-        ref : numpy.ndarray or cupy.ndarray
-            The reference image to use for processing
-        """
+        """ Set the reference image for the OPD processor. """
         # Ensure reference is on the correct device
         self.ref = self._asarray(ref)
             
@@ -122,19 +91,7 @@ class CGM_Processor:
         self.IRefy = self.ifft(HRef[1])
 
     def _asarray(self, arr):
-        """
-        Ensure the array is on the correct device (GPU or CPU).
-        
-        Parameters:
-        -----------
-        arr : numpy.ndarray or cupy.ndarray
-            Array to ensure is on the correct device
-            
-        Returns:
-        --------
-        numpy.ndarray or cupy.ndarray
-            Array on the correct device
-        """
+        """ Ensure the array is on the correct device (GPU or CPU). """
         if self.gpu and isinstance(arr, np.ndarray):
             return cp.asarray(arr)
         elif not self.gpu and isinstance(arr, cp.ndarray):
