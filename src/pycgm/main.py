@@ -73,10 +73,7 @@ class CGM_Processor:
         self.FRef = self.fft(self.ref)
         
         # Get magnitude and pass GPU flag to retrieve_first_order
-        if self.gpu:
-            FRef_abs = cp.abs(self.FRef)
-        else:
-            FRef_abs = np.abs(self.FRef)
+        FRef_abs = self.xp.abs(self.FRef)
             
         # Pass GPU flag to retrieve_first_order
         self.cropsX = retrieve_first_order(FRef_abs, gpu=self.gpu)
@@ -92,11 +89,10 @@ class CGM_Processor:
 
     def _asarray(self, arr):
         """ Ensure the array is on the correct device (GPU or CPU). """
-        if self.gpu and isinstance(arr, np.ndarray):
+        if self.gpu:
             return cp.asarray(arr)
-        elif not self.gpu and isinstance(arr, cp.ndarray):
-            return cp.asnumpy(arr)
-        return arr
+        else:
+            return arr
 
     def process(self, itf, ref=None):
         """
@@ -166,7 +162,7 @@ class CGM_Processor:
         
         # Return result on CPU
         if self.gpu:
-            return cp.asnumpy(result)
+            return result.get()
         return result
 
 def get_phase_cmap():
