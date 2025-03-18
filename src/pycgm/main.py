@@ -199,8 +199,8 @@ class CGM_Processor:
         mask=self.xp.abs(denom) < 1e-10
 
         # Integrate phase gradients
+        denom[mask]=1
         quotient=(self.fft(dwX) + 1j * self.fft(dwY))/denom
-        print(quotient.shape, mask.shape)
         quotient[mask]=0
         W0 = self.ifft(quotient)
 
