@@ -212,7 +212,7 @@ class CGM_Processor:
             return cp.asnumpy(result)
         return result
 
-def phase_cmap():
+def get_phase_cmap():
     """
     Load the phase1024.txt colormap and create a LinearSegmentedColormap.
     
@@ -234,3 +234,5 @@ def phase_cmap():
     cmap = LinearSegmentedColormap.from_list('phase', phase_LUT)
     
     return cmap
+
+phase_cmap = get_phase_cmap()

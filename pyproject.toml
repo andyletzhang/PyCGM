@@ -16,7 +16,8 @@ classifiers = [
 
 dependencies = [
     "numpy",
-    "scikit-image"
+    "scikit-image",
+    "matplotlib"
 ]
 
 [build-system]
