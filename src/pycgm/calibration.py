@@ -31,8 +31,8 @@ class FcropParameters:
         self._circ_mask = None
         
         # Convert scalar values for GPU compatibility if needed
-        if isinstance(self._nshiftr, cp.ndarray):
-            nshiftr_scalar = float(cp.asnumpy(self._nshiftr))
+        if self.gpu:
+            nshiftr_scalar = float(self._nshiftr.get())
         else:
             nshiftr_scalar = float(self._nshiftr)
             
@@ -43,9 +43,9 @@ class FcropParameters:
             self.zeta = 1 / nshiftr_scalar
             
             # Handle potential GPU array conversion for angle values
-            if isinstance(self._nshiftx, cp.ndarray):
-                nshiftx_scalar = float(cp.asnumpy(self._nshiftx))
-                nshifty_scalar = float(cp.asnumpy(self._nshifty))
+            if self.gpu:
+                nshiftx_scalar = float(self._nshiftx.get())
+                nshifty_scalar = float(self._nshifty.get())
             else:
                 nshiftx_scalar = float(self._nshiftx)
                 nshifty_scalar = float(self._nshifty)
@@ -96,10 +96,8 @@ def retrieve_first_order(image, gpu=False):
         Parameters for cropping around the first order peak
     """
     # Convert to numpy if needed for scikit-image processing
-    original_on_gpu = False
-    if gpu and has_gpu and isinstance(image, cp.ndarray):
-        image_np = cp.asnumpy(image)
-        original_on_gpu = True
+    if gpu:
+        image_np = image.get()
     else:
         image_np = image
     
@@ -122,4 +120,4 @@ def retrieve_first_order(image, gpu=False):
     r = np.linalg.norm(np.array(zeroth_order) - np.array(first_order))
     
     # Return as FcropParameters with GPU flag
-    return FcropParameters(*first_order[::-1], r / 2, Nx, Ny, gpu=gpu and has_gpu)
+    return FcropParameters(*first_order[::-1], r / 2, Nx, Ny, gpu=gpu)
