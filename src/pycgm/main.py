@@ -1,17 +1,22 @@
 import numpy as np
 
 from .calibration import retrieve_first_order
-from .fft import FFT_Processor
 
+try:
+    import cupy as cp
+    has_gpu = True
+except ImportError:
+    cp = None
+    has_gpu = False
 
 class CGM_Processor:
-    def __init__(self, ref=None, shape=(2160, 2560), gamma=39e-6, d=5e-4, p=6.5e-6, Z=1, threads=4):
+    def __init__(self, ref=None, shape=(2160, 2560), gamma=39e-6, d=5e-4, p=6.5e-6, Z=1, gpu=True):
         """
         Initialize the CGM_Processor.
 
         Parameters:
         -----------
-        ref : numpy.ndarray, optional
+        ref : numpy.ndarray or cupy.ndarray, optional
             Reference image to initialize the processor.
         shape : tuple of int, optional
             Shape of the images (if ref is not provided). Defaults to (2160, 2560) (the size of the Phasics SID4 camera chip).
@@ -23,8 +28,9 @@ class CGM_Processor:
             The pixel size 'p' parameter, by default 6.5e-6
         Z : int, optional
             The Z factor for processing, by default 1
-        threads : int, optional
-            The number of threads for FFT processing, by default 4
+            
+        gpu : bool, optional
+            Whether to use GPU acceleration if available, by default True
 
         Notes:
         ------
@@ -32,20 +38,56 @@ class CGM_Processor:
         """
         if ref is not None:
             shape = ref.shape
-
+        
+        self.gpu = has_gpu and gpu
+        # Choose appropriate array library based on GPU availability
+        self.xp = cp if self.gpu else np
+        
         self.Ny, self.Nx = shape
-        self.xx, self.yy = np.meshgrid(np.arange(self.Nx), np.arange(self.Ny))
+        
+        # Create mesh grid on appropriate device
+        self.xx, self.yy = self.xp.meshgrid(self.xp.arange(self.Nx), self.xp.arange(self.Ny))
+        
         self.gamma = gamma
         self.d = d
         self.p = p
         self.Z = Z
-        self.alpha = gamma / (4 * np.pi * d)
-        self.threads = threads
-
-        self.fft_processor = FFT_Processor(shape, threads=threads)
+        self.alpha = gamma / (4 * self.xp.pi * d)
 
         if ref is not None:
             self.set_reference(ref)
+
+    def fft(self, image):
+        """
+        Compute the FFT of an image.
+
+        Parameters:
+        -----------
+        image : numpy.ndarray or cupy.ndarray
+            Image to compute the FFT of
+
+        Returns:
+        --------
+        numpy.ndarray or cupy.ndarray
+            The FFT of the input image
+        """
+        return self.xp.fft.fftshift(self.xp.fft.fft2(image))
+
+    def ifft(self, image):
+        """
+        Compute the inverse FFT of an image.
+
+        Parameters:
+        -----------
+        image : numpy.ndarray or cupy.ndarray
+            Image to compute the inverse FFT of
+
+        Returns:
+        --------
+        numpy.ndarray or cupy.ndarray
+            The inverse FFT of the input image
+        """
+        return self.xp.fft.ifft2(self.xp.fft.ifftshift(image))
 
     def set_reference(self, ref):
         """
@@ -53,19 +95,51 @@ class CGM_Processor:
 
         Parameters:
         -----------
-        ref : numpy.ndarray
+        ref : numpy.ndarray or cupy.ndarray
             The reference image to use for processing
         """
-        self.ref = ref
-        self.FRef = self.fft_processor.fft(ref)
-        self.cropsX = retrieve_first_order(np.abs(self.FRef))
-        self.cropsY = self.cropsX.rotate90()
+        # Ensure reference is on the correct device
+        self.ref = self._asarray(ref)
+            
+        self.FRef = self.fft(self.ref)
+        
+        # Get magnitude and pass GPU flag to retrieve_first_order
+        if self.gpu:
+            FRef_abs = cp.abs(self.FRef)
+        else:
+            FRef_abs = np.abs(self.FRef)
+            
+        # Pass GPU flag to retrieve_first_order
+        self.cropsX = retrieve_first_order(FRef_abs, gpu=self.gpu)
+        self.cropsY = self.cropsX.rotate90()  # rotate90 now passes GPU flag
 
         HRef = []
         for c in [self.cropsX, self.cropsY]:
-            HRef.append(np.roll(self.FRef * c.circ_mask, shift=(-c.shifty, -c.shiftx), axis=(0, 1)))
-        self.IRefx = self.fft_processor.ifft(HRef[0])
-        self.IRefy = self.fft_processor.ifft(HRef[1])
+            # circ_mask is now created with the right array library
+            HRef.append(self.xp.roll(self.FRef * c.circ_mask, shift=(-c.shifty, -c.shiftx), axis=(0, 1)))
+            
+        self.IRefx = self.ifft(HRef[0])
+        self.IRefy = self.ifft(HRef[1])
+
+    def _asarray(self, arr):
+        """
+        Ensure the array is on the correct device (GPU or CPU).
+        
+        Parameters:
+        -----------
+        arr : numpy.ndarray or cupy.ndarray
+            Array to ensure is on the correct device
+            
+        Returns:
+        --------
+        numpy.ndarray or cupy.ndarray
+            Array on the correct device
+        """
+        if self.gpu and isinstance(arr, np.ndarray):
+            return cp.asarray(arr)
+        elif not self.gpu and isinstance(arr, cp.ndarray):
+            return cp.asnumpy(arr)
+        return arr
 
     def process(self, itf, ref=None):
         """
@@ -73,52 +147,70 @@ class CGM_Processor:
 
         Parameters:
         -----------
-        itf : numpy.ndarray
+        itf : numpy.ndarray or cupy.ndarray
             Interference image
-        ref : numpy.ndarray
+        ref : numpy.ndarray or cupy.ndarray, optional
             Reference image
 
         Returns:
         --------
-        numpy.ndarray
+        numpy.ndarray or cupy.ndarray
             The calculated OPD map
         """
-        if ref is not None and not np.array_equal(ref, self.ref):
-            self.set_reference(ref)
+        # Ensure input is on correct device
+        itf = self._asarray(itf)
+        
+        if ref is not None:
+            ref = self._asarray(ref)
+            if not self.xp.array_equal(ref, self.ref):
+                self.set_reference(ref)
 
         # Compute FFTs
-        FItf = self.fft_processor.fft(itf)
+        FItf = self.fft(itf)
 
         # Apply elliptical mask and shift
         H = []
         for c in [self.cropsX, self.cropsY]:
-            H.append(np.roll(FItf * c.circ_mask, shift=(-c.shifty, -c.shiftx), axis=(0, 1)))
+            # circ_mask is already on the right device
+            H.append(self.xp.roll(FItf * c.circ_mask, shift=(-c.shifty, -c.shiftx), axis=(0, 1)))
 
         # Inverse FFT to get filtered images
-        Ix = self.fft_processor.ifft(H[0])
-        Iy = self.fft_processor.ifft(H[1])
+        Ix = self.ifft(H[0])
+        Iy = self.ifft(H[1])
 
         # Calculate phase differences
-        dw1 = np.angle(np.conjugate(self.IRefx) * Ix) * self.alpha
-        dw2 = np.angle(np.conjugate(self.IRefy) * Iy) * self.alpha
+        dw1 = self.xp.angle(self.xp.conjugate(self.IRefx) * Ix) * self.alpha
+        dw2 = self.xp.angle(self.xp.conjugate(self.IRefy) * Iy) * self.alpha
 
+        # Ensure angle values are on the right device
+        cos_angle = self.xp.array(self.cropsX.angle['cos'])
+        sin_angle = self.xp.array(self.cropsX.angle['sin'])
+        
         # Rotate phase differences to original coordinate system
-        dwX = self.cropsX.angle['cos'] * dw1 - self.cropsX.angle['sin'] * dw2
-        dwY = self.cropsX.angle['sin'] * dw1 + self.cropsX.angle['cos'] * dw2
+        dwX = cos_angle * dw1 - sin_angle * dw2
+        dwY = sin_angle * dw1 + cos_angle * dw2
 
-        # Calculate frequency domain coordinates
+        # Calculate frequency domain coordinates - already on right device
         kx = self.xx - self.Nx / 2
         ky = self.yy - self.Ny / 2
 
         # Compute denominator for integration, handling division by zero
-        denom = 1j * 2 * np.pi * (kx / self.Nx + 1j * ky / self.Ny)
-        denom[np.abs(denom) < 1e-10] = np.inf
+        denom = 1j * 2 * self.xp.pi * (kx / self.Nx + 1j * ky / self.Ny)
+        mask=self.xp.abs(denom) < 1e-10
 
         # Integrate phase gradients
-        W0 = self.fft_processor.ifft((self.fft_processor.fft(dwX) + 1j * self.fft_processor.fft(dwY)) / denom)
+        quotient=(self.fft(dwX) + 1j * self.fft(dwY))/denom
+        print(quotient.shape, mask.shape)
+        quotient[mask]=0
+        W0 = self.ifft(quotient)
 
         # Return real part scaled by pixel size and Z factor
-        return np.real(W0) * self.p / self.Z
+        result = self.xp.real(W0) * self.p / self.Z
+        
+        # Return result on CPU
+        if self.gpu:
+            return cp.asnumpy(result)
+        return result
 
 def phase_cmap():
     """
