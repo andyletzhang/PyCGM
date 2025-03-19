@@ -29,30 +29,18 @@ class FcropParameters:
         self._nshifty = self.shifty / self.Ny
         self._nshiftr = self.xp.hypot(self._nshiftx, self._nshifty)
         self._circ_mask = None
-        
-        # Convert scalar values for GPU compatibility if needed
-        if self.gpu:
-            nshiftr_scalar = float(self._nshiftr.get())
-        else:
-            nshiftr_scalar = float(self._nshiftr)
             
-        if nshiftr_scalar == 0:
+        if self._nshiftr == 0:
             self.zeta = float("inf")
             self.angle = {"cos": 1.0, "sin": 0.0}
         else:
-            self.zeta = 1 / nshiftr_scalar
+            self.zeta = 1 / self._nshiftr
             
             # Handle potential GPU array conversion for angle values
-            if self.gpu:
-                nshiftx_scalar = float(self._nshiftx.get())
-                nshifty_scalar = float(self._nshifty.get())
-            else:
-                nshiftx_scalar = float(self._nshiftx)
-                nshifty_scalar = float(self._nshifty)
                 
             self.angle = {
-                "cos": nshiftx_scalar / nshiftr_scalar,
-                "sin": nshifty_scalar / nshiftr_scalar,
+                "cos": self._nshiftx / self._nshiftr,
+                "sin": self._nshifty / self._nshiftr,
             }
             
         self.Rx = self.Nx / self.zeta / 2
