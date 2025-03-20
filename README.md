@@ -12,8 +12,8 @@ pip install git+https://github.com/andyletzhang/pyCGM
 ## Requirements
 - Python >3.6
 - NumPy
-- pyFFTW
 - scikit-image
+- CuPy (optional)
 
 ## Usage
 
