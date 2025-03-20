@@ -1,0 +1,6 @@
+{
+    "valid_positions": [[2009,707],[1724,1695],[553,1454],[838,466]],
+    "radius": 409,
+    "reference_size": [2560, 2160],
+    "comment": "These positions are based on the sample_reference.tif image. The coordinates represent the expected locations of first order peaks in the FFT magnitude image."
+  }
