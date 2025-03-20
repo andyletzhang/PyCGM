@@ -12,8 +12,8 @@ from skimage.feature import peak_local_max
 
 @dataclass
 class FcropParameters:
-    x: float
-    y: float
+    x: int
+    y: int
     R: float
     Nx: int
     Ny: int
@@ -55,7 +55,7 @@ class FcropParameters:
         x2 = x0 - dy
         y2 = y0 + dx
         x2 /= Nratio
-        return FcropParameters(x2, y2, self.R, self.Nx, self.Ny, self.gpu)
+        return FcropParameters(int(x2), int(y2), self.R, self.Nx, self.Ny, self.gpu)
 
     @property
     def circ_mask(self):
@@ -103,9 +103,9 @@ def retrieve_first_order(image, gpu=False):
     
     # Zero order is the brightest, first order is second brightest
     zeroth_order, first_order = sorted_coords[:2]
-    
     # Calculate radius
     r = np.linalg.norm(np.array(zeroth_order) - np.array(first_order))
     
     # Return as FcropParameters with GPU flag
-    return FcropParameters(*first_order[::-1], r / 2, Nx, Ny, gpu=gpu)
+    y, x = first_order.astype(int)
+    return FcropParameters(x, y, r / 2, Nx, Ny, gpu=gpu)
