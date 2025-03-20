@@ -109,7 +109,7 @@ class CGM_Processor:
         Returns:
         --------
         numpy.ndarray or cupy.ndarray
-            The calculated OPD map
+            The calculated OPD map in microns
         """
         # Ensure input is on correct device
         if ref is not None:
@@ -163,10 +163,12 @@ class CGM_Processor:
 
         # Return real part scaled by pixel size and Z factor
         result = self.xp.real(W0) * self.p / self.Z
+        result *= 1e6  # Convert to microns
         
         # Return result on CPU
         if self.gpu:
             return result.get()
+        
         return result
 
 def get_phase_cmap():
