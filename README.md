@@ -21,21 +21,21 @@ Basic usage example:
 
 ```python
 import numpy as np
-from opd_processor import OPD_Processor
+from pycgm import CGMProcessor, phase_cmap
 
 # Create sample image and reference (replace with actual image data)
 reference = np.random.random((512, 512))
 interferogram = np.random.random((512, 512))
 
-# Initialize the OPD processor
-processor = OPD_Processor(ref=reference)
+# Initialize the CGM processor
+processor = CGMProcessor(ref=reference)
 
 # Compute the optical path difference
 opd_map = processor.process(interferogram)
 
 # Display the result
 import matplotlib.pyplot as plt
-plt.imshow(opd_map)
+plt.imshow(opd_map, cmap=phase_cmap)
 plt.colorbar()
 plt.show()
 ```
