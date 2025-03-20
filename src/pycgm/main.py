@@ -178,11 +178,11 @@ def get_phase_cmap():
     cmap : LinearSegmentedColormap
         The colormap created from the phase1024.txt file.
     """
-    import pkg_resources
+    import importlib.resources
     from matplotlib.colors import LinearSegmentedColormap
     
     # Get the path to the phase1024.txt file, bundled in the package
-    colormap_file = pkg_resources.resource_filename('pycgm', 'phase1024.txt')
+    colormap_file = importlib.resources.files('pycgm').joinpath('phase1024.txt')
     
     # Load the colormap data
     phase_LUT = np.loadtxt(colormap_file)
