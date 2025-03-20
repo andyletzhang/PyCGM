@@ -10,7 +10,7 @@ except ImportError:
     has_gpu = False
 
 class CGM_Processor:
-    def __init__(self, ref=None, shape=(2160, 2560), gamma=39e-6, d=5e-4, p=6.5e-6, Z=1, gpu=True):
+    def __init__(self, ref=None, gamma=39e-6, d=5e-4, p=6.5e-6, Z=1, gpu=True):
         """
         Initialize the CGM_Processor.
 
@@ -36,17 +36,10 @@ class CGM_Processor:
         ------
         If `ref` is provided, the shape is inferred from the reference image.
         """
-        if ref is not None:
-            shape = ref.shape
-        
         self.gpu = has_gpu and gpu
         # Choose appropriate array library based on GPU availability
         self.xp = cp if self.gpu else np
-        
-        self.Ny, self.Nx = shape
-        
-        # Create mesh grid on appropriate device
-        self.xx, self.yy = self.xp.meshgrid(self.xp.arange(self.Nx), self.xp.arange(self.Ny))
+        self.shape=None
         
         self.gamma = gamma
         self.d = d
@@ -68,8 +61,16 @@ class CGM_Processor:
     def set_reference(self, ref):
         """ Set the reference image for the OPD processor. """
         # Ensure reference is on the correct device
+        if ref.ndim != 2:
+            raise ValueError(f"Unexpected reference shape {ref.shape}: Reference image must be 2D")
+
         self.ref = self._asarray(ref)
-            
+        
+        if self.ref.shape != self.shape: # Update shape and meshgrid if needed
+            self.shape = self.ref.shape
+            self.Ny, self.Nx = self.shape
+            self.xx, self.yy = self.xp.meshgrid(self.xp.arange(self.Nx), self.xp.arange(self.Ny))
+
         self.FRef = self.fft(self.ref)
         
         # Get magnitude and pass GPU flag to retrieve_first_order
@@ -111,12 +112,15 @@ class CGM_Processor:
             The calculated OPD map
         """
         # Ensure input is on correct device
-        itf = self._asarray(itf)
-        
         if ref is not None:
             ref = self._asarray(ref)
             if not self.xp.array_equal(ref, self.ref):
                 self.set_reference(ref)
+
+        itf = self._asarray(itf)
+
+        if itf.shape!=self.ref.shape:
+            raise ValueError(f"Unexpected image shape {itf.shape}: Image must match reference shape {self.ref.shape}")
 
         # Compute FFTs
         FItf = self.fft(itf)
