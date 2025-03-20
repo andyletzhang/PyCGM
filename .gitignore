@@ -1,6 +1,6 @@
 # installation files #
 ######################
-src/pycgm.egg-info/
+pycgm.egg-info/
 build/
 
 # Compiled source #

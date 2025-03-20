@@ -9,10 +9,10 @@ except ImportError:
     cp = None
     has_gpu = False
 
-class CGM_Processor:
+class CGMProcessor:
     def __init__(self, ref=None, gamma=39e-6, d=5e-4, p=6.5e-6, Z=1, gpu=True):
         """
-        Initialize the CGM_Processor.
+        Initialize the CGMProcessor.
 
         Parameters:
         -----------

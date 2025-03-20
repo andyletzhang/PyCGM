@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from pycgm import CGM_Processor
+from pycgm import CGMProcessor
 from pycgm.calibration import FcropParameters, retrieve_first_order
 from pathlib import Path
 import json
@@ -34,7 +34,7 @@ def valid_first_orders(example_dir):
 
 
 def test_cpu(sample_reference, sample_interferogram, sample_phase_map):
-    cgm = CGM_Processor(ref=sample_reference, gpu=False)
+    cgm = CGMProcessor(ref=sample_reference, gpu=False)
     assert cgm.xp == np
 
     out = cgm.process(sample_interferogram)
@@ -43,7 +43,7 @@ def test_cpu(sample_reference, sample_interferogram, sample_phase_map):
 def test_gpu(sample_reference, sample_interferogram, sample_phase_map):
     if not has_gpu:
         pytest.skip("No GPU available")
-    cgm = CGM_Processor(ref=sample_reference, gpu=True)
+    cgm = CGMProcessor(ref=sample_reference, gpu=True)
     assert cgm.xp == cp
 
     out = cgm.process(sample_interferogram)

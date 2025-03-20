@@ -8,9 +8,11 @@ authors = [
 ]
 
 description = "Interferogram processor for quantitative phase microscopy. Description last edited 20250315"
+
+license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
+
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
@@ -24,11 +26,8 @@ dependencies = [
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-"pycgm" = ["phase1024.txt"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 130

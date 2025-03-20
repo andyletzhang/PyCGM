@@ -2,7 +2,7 @@
 _Created by Andy Zhang for use in the [Gardel Lab at the University of Chicago](https://squishycell.uchicago.edu/)._
 
 A Python package for optical path difference (OPD) processing using Fourier analysis, based on the MatLab [CGMProcess](https://github.com/baffou/CGMprocess) repository written by Guillaume Baffou, modified to automatically identify first-order points and optimized for repeat processing on the same reference image.
-![Example phase interferogram and its corresponding phase map](src/pycgm/assets/phase_map_demo.png)
+![Example phase interferogram and its corresponding phase map](pycgm/assets/phase_map_demo.png)
 ## Installation
 
 ```bash
