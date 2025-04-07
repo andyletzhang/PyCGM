@@ -93,7 +93,7 @@ def retrieve_first_order(image, gpu=False):
     
     # Find local maxima
     min_distance = min(image_np.shape) // 5
-    threshold = 0.1 * image_np.max()
+    threshold = 0.01 * image_np.max()
     coordinates = peak_local_max(
         image_np, min_distance=min_distance, threshold_abs=threshold
     )

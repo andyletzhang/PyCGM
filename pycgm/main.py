@@ -82,7 +82,6 @@ class CGMProcessor:
 
         HRef = []
         for c in [self.cropsX, self.cropsY]:
-            # circ_mask is now created with the right array library
             HRef.append(self.xp.roll(self.FRef * c.circ_mask, shift=(-c.shifty, -c.shiftx), axis=(0, 1)))
             
         self.IRefx = self.ifft(HRef[0])
@@ -138,25 +137,21 @@ class CGMProcessor:
         # Calculate phase differences
         dw1 = self.xp.angle(self.xp.conjugate(self.IRefx) * Ix) * self.alpha
         dw2 = self.xp.angle(self.xp.conjugate(self.IRefy) * Iy) * self.alpha
-
-        # Ensure angle values are on the right device
-        cos_angle = self.xp.array(self.cropsX.angle['cos'])
-        sin_angle = self.xp.array(self.cropsX.angle['sin'])
         
         # Rotate phase differences to original coordinate system
-        dwX = cos_angle * dw1 - sin_angle * dw2
-        dwY = sin_angle * dw1 + cos_angle * dw2
+        dwX = self.cropsX.angle['cos'] * dw1 - self.cropsX.angle['sin'] * dw2
+        dwY = self.cropsX.angle['sin'] * dw1 + self.cropsX.angle['cos'] * dw2
 
         # Calculate frequency domain coordinates - already on right device
         kx = self.xx - self.Nx / 2
         ky = self.yy - self.Ny / 2
 
+        # Integrate phase gradients
         # Compute denominator for integration, handling division by zero
         denom = 1j * 2 * self.xp.pi * (kx / self.Nx + 1j * ky / self.Ny)
         mask=self.xp.abs(denom) < 1e-10
-
-        # Integrate phase gradients
         denom[mask]=1
+        
         quotient=(self.fft(dwX) + 1j * self.fft(dwY))/denom
         quotient[mask]=0
         W0 = self.ifft(quotient)
